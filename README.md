@@ -1,4 +1,4 @@
-Hexpress
+Hex-Lattice-Compression
 
 High efficiency vector lattice compression suite. Features recursive dictionary mapping for bit-perfect reconstruction of large scale genomic and binary datasets.
 
@@ -44,8 +44,6 @@ Distributed under the GNU General Public License v3.0 (GPL-3.0).
 Research documentation anchored by Unified Fractal Theory. https://doi.org/10.5281/zenodo.18152385
 
 Support the Research
-
-bitcoin:bc1qu6guczl68h6t0w044rhjlv5nxanjqps44galwh
 
 Buy Me A Coffee: buymeacoffee.com/tourneyx
 
