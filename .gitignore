@@ -1,0 +1,19 @@
+# Executables
+*.exe
+*.out
+*.app
+
+# Dynamic Libraries & Objects
+*.dll
+*.so
+*.dylib
+*.o
+*.obj
+
+# Target compressed test outputs
+*.vxl
+*.decompressed
+
+# Target build directories
+/bin/
+/build/
