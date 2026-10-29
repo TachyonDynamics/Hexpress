@@ -1,0 +1,32 @@
+# Build outputs / executables
+hex-press
+hex-tract
+test_lib
+test_lib_asan
+test_lib_tsan
+*.so
+*.so.*
+*.a
+*.dylib
+*.dll
+*.exe
+*.o
+*.obj
+
+# Compressed / generated test files
+*.vxl
+*.decompressed
+test_tmp/
+*.tar.gz
+*.zip
+
+# IDE & editor files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Build directories
+build/
+dist/

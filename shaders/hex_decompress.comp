@@ -1,0 +1,103 @@
+#version 450
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : enable
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout(std430, binding = 0) readonly buffer InputCompressedBuffer {
+    uint input_bytes[];
+};
+
+layout(std430, binding = 1) writeonly buffer OutputFrameBuffer {
+    uint8_t output_bytes[];
+};
+
+layout(push_constant) uniform DecompressParams {
+    uint target_byte_size;
+    uint compressed_data_offset;
+} params;
+
+// Shared workgroup cache matching C++ mirror lattice
+shared uint shared_lattice[4096];
+shared uint occupied[65536];
+
+uint hex_hash32(uint val) {
+    return (val * 2654435761u) >> 16u;
+}
+
+uint read_bit(inout uint bit_offset) {
+    uint byte_idx = bit_offset / 8u;
+    uint bit_pos  = 7u - (bit_offset % 8u);
+    bit_offset++;
+    
+    uint dword = input_bytes[byte_idx / 4u];
+    uint shift = (byte_idx % 4u) * 8u;
+    uint byte_val = (dword >> shift) & 0xFFu;
+    
+    return (byte_val >> bit_pos) & 1u;
+}
+
+uint read_bits(inout uint bit_offset, uint count) {
+    uint val = 0u;
+    for (int i = int(count) - 1; i >= 0; --i) {
+        if (read_bit(bit_offset) == 1u) {
+            val |= (1u << uint(i));
+        }
+    }
+    return val;
+}
+
+void main() {
+    uint g_id = gl_GlobalInvocationID.x;
+    if (g_id != 0u) return; // Primary thread handles single-stream block decompression
+
+    uint bit_ptr = params.compressed_data_offset * 8u;
+    uint out_ptr = 0u;
+    uint next_id = 0u;
+
+    while (out_ptr < params.target_byte_size) {
+        uint is_match = read_bit(bit_ptr);
+
+        uint token_bits = 12u;
+        if (next_id <= 256u) token_bits = 8u;
+        else if (next_id <= 1024u) token_bits = 10u;
+
+        if (is_match == 1u) {
+            uint id = read_bits(bit_ptr, token_bits);
+            uint chunk = shared_lattice[id];
+
+            for (uint i = 0u; i < 4u; ++i) {
+                uint b = (chunk >> ((3u - i) * 8u)) & 0xFFu;
+                output_bytes[out_ptr] = uint8_t(b);
+                out_ptr++;
+
+                if (out_ptr >= 4u && next_id < 4096u) {
+                    uint c = (uint(output_bytes[out_ptr - 4u]) << 24u) |
+                             (uint(output_bytes[out_ptr - 3u]) << 16u) |
+                             (uint(output_bytes[out_ptr - 2u]) << 8u)  |
+                             (uint(output_bytes[out_ptr - 1u]));
+                    uint hash_key = hex_hash32(c);
+                    if (occupied[hash_key] == 0u) {
+                        occupied[hash_key] = 1u;
+                        shared_lattice[next_id++] = c;
+                    }
+                }
+            }
+        } else {
+            uint byte_val = read_bits(bit_ptr, 8u);
+            output_bytes[out_ptr] = uint8_t(byte_val);
+            out_ptr++;
+
+            if (out_ptr >= 4u && next_id < 4096u) {
+                uint c = (uint(output_bytes[out_ptr - 4u]) << 24u) |
+                         (uint(output_bytes[out_ptr - 3u]) << 16u) |
+                         (uint(output_bytes[out_ptr - 2u]) << 8u)  |
+                         (uint(output_bytes[out_ptr - 1u]));
+                uint hash_key = hex_hash32(c);
+                if (occupied[hash_key] == 0u) {
+                    occupied[hash_key] = 1u;
+                    shared_lattice[next_id++] = c;
+                }
+            }
+        }
+    }
+}

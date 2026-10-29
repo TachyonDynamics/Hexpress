@@ -1,0 +1,11 @@
+prefix=${pcfiledir}/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: hexpress
+Description: Block-parallel LZ77 + Huffman/FSE compressor with streaming API, dictionaries and SIMD
+Version: @PROJECT_VERSION@
+Libs: -L${libdir} -lhexpress
+Libs.private: -lpthread
+Cflags: -I${includedir}
