@@ -1,4 +1,4 @@
-# HexPress v6
+# HexPress
 
 Block-parallel LZ77 compressor with deflate-style Huffman, FSE/tANS, an optimal parser, shared
 dictionaries, optional cross-block history, SIMD, and a streaming C API. No dependencies.
